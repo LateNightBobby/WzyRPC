@@ -29,7 +29,7 @@ public class ClientProxy implements InvocationHandler {
 //                rpcClient=new SocketRpcClient(host,port);
 //        }
 //    }
-    public ClientProxy(){
+    public ClientProxy() throws InterruptedException {
         rpcClient=new NettyRpcClient();
     }
     @Override
@@ -49,5 +49,9 @@ public class ClientProxy implements InvocationHandler {
     public <T>T getProxy(Class<T> clazz) {
         Object o = Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, this);
         return (T) o;
+    }
+
+    public void close() {
+        rpcClient.close();
     }
 }

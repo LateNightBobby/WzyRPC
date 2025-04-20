@@ -1,6 +1,8 @@
 package client.serviceCenter.impl;
 
+import client.cache.ServiceCache;
 import client.serviceCenter.ServiceCenter;
+import client.serviceCenter.watcher.WatchZK;
 import common.entity.Constants;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -14,23 +16,37 @@ public class ZKServiceCenter implements ServiceCenter {
 
     private CuratorFramework client;
 
-    public ZKServiceCenter() {
+    private ServiceCache cache;
+
+    public ZKServiceCenter() throws InterruptedException {
         RetryPolicy policy = new ExponentialBackoffRetry(1000, 3);
         // zookeeper的地址固定，不管是服务提供者还是，消费者都要与之建立连接
         // sessionTimeoutMs 与 zoo.cfg中的tickTime 有关系，
         // zk还会根据minSessionTimeout与maxSessionTimeout两个参数重新调整最后的超时值。默认分别为tickTime 的2倍和20倍
         // 使用心跳监听状态
-        this.client = CuratorFrameworkFactory.builder().connectString("127.0.0.1:2181")
+        this.client = CuratorFrameworkFactory.builder().connectString(Constants.ZK_ADDRESS)
                 .sessionTimeoutMs(40000).retryPolicy(policy).namespace(Constants.ROOT_PATH).build();
         this.client.start();
         System.out.println("zookeeper ServiceCenter 连接成功");
+
+        cache = new ServiceCache();
+        WatchZK watchZK = new WatchZK(client, cache);
+        watchZK.watchToUpdate(Constants.ROOT_PATH);
+
     }
     @Override
     public InetSocketAddress serviceDiscovery(String serviceName) {
         try {
-            List<String> strings = client.getChildren().forPath("/" + serviceName);
+            // 先找缓存
+            List<String> serviceList = cache.getServiceFromCache(serviceName);
+
+            if (serviceList == null) {
+                serviceList = client.getChildren().forPath("/" + serviceName);
+            }
+
+//            List<String> strings = client.getChildren().forPath("/" + serviceName);
 //            TODO 负载均衡 现默认使用第一个 hh
-            return parseAddress(strings.get(0));
+            return parseAddress(serviceList.get(0));
         } catch (Exception e) {
             e.printStackTrace();
         }

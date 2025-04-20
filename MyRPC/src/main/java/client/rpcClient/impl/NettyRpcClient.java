@@ -33,7 +33,7 @@ public class NettyRpcClient implements RpcClient {
 //        this.host = host;
 //        this.port = port;
 //    }
-    public NettyRpcClient() {
+    public NettyRpcClient() throws InterruptedException {
         this.serviceCenter = new ZKServiceCenter();
     }
 
@@ -70,6 +70,19 @@ public class NettyRpcClient implements RpcClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
             return RpcResponse.fail();
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            if (eventLoopGroup != null) {
+                eventLoopGroup.shutdownGracefully().sync();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+//            log.error("关闭 Netty 资源时发生异常: {}", e.getMessage(), e);
+            Thread.currentThread().interrupt();
         }
     }
 
