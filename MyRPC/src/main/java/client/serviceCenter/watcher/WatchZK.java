@@ -1,6 +1,7 @@
 package client.serviceCenter.watcher;
 
 import client.cache.ServiceCache;
+import client.serviceCenter.balance.HashRingManager;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
@@ -40,6 +41,8 @@ public class WatchZK {
                             String address=pathList[2];
                             //将新注册的服务加入到本地缓存中
                             cache.addServiceToCache(serviceName,address);
+//                             更新哈希环
+//                            HashRingManager.updateService(serviceName, cache.getServiceFromCache(serviceName));
                         }
                         break;
                     case "NODE_CHANGED": // 节点更新
@@ -60,6 +63,9 @@ public class WatchZK {
                             String address=pathList_d[2];
                             //将新注册的服务加入到本地缓存中
                             cache.delete(serviceName,address);
+
+                            // 更新哈希环
+//                            HashRingManager.updateService(serviceName, cache.getServiceFromCache(serviceName));
                         }
                         break;
                     default:

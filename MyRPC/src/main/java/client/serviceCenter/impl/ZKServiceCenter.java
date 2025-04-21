@@ -2,6 +2,8 @@ package client.serviceCenter.impl;
 
 import client.cache.ServiceCache;
 import client.serviceCenter.ServiceCenter;
+import client.serviceCenter.balance.HashRingManager;
+import client.serviceCenter.balance.impl.ConsistencyHashLoadBalance;
 import client.serviceCenter.watcher.WatchZK;
 import common.entity.Constants;
 import org.apache.curator.RetryPolicy;
@@ -46,7 +48,10 @@ public class ZKServiceCenter implements ServiceCenter {
 
 //            List<String> strings = client.getChildren().forPath("/" + serviceName);
 //            TODO 负载均衡 现默认使用第一个 hh
-            return parseAddress(serviceList.get(0));
+            String address = new ConsistencyHashLoadBalance().balance(serviceList);
+//            String address = HashRingManager.getServer(serviceName);
+            return parseAddress(address);
+//            return parseAddress(serviceList.get(0));
         } catch (Exception e) {
             e.printStackTrace();
         }
