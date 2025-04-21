@@ -44,6 +44,41 @@ public class ZKServiceRegister implements ServiceRegister {
         }
     }
 
+    @Override
+    public void register(String serviceName, InetSocketAddress serviceAddress, boolean canRetry) {
+        try {
+            // serviceName创建成永久节点，服务提供者下线时，不删服务名，只删地址
+            if (client.checkExists().forPath("/" + serviceName) == null) {
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath("/" + serviceName);
+                System.out.format("创建服务 %s\n", serviceName);
+            }
+            // 创建路径地址
+            String path = "/" + serviceName + "/" + getServiceAddress(serviceAddress);
+            //
+            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path);
+            System.out.format("created node: %s\n", path);
+
+            //幂等服务添加到retry中
+            if (canRetry) {
+                path = "/" + Constants.RETRY_PATH + "/" + serviceName;
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path);
+            }
+        } catch (Exception e) {
+//            e.printStackTrace();
+            System.out.println("此服务已存在");
+        }
+    }
+
+    @Override
+    public void offline(String serviceName, InetSocketAddress socketAddress) {
+        String path = "/" + serviceName + "/" + getServiceAddress(socketAddress);
+        try {
+            client.delete().forPath(path);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     // 地址 -> XXX.XXX.XXX.XXX:port 字符串
     private String getServiceAddress(InetSocketAddress serverAddress) {
         return serverAddress.getHostName() +

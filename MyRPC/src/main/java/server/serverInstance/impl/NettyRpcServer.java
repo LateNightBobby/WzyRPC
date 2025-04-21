@@ -40,6 +40,6 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public void stop() {
-
+        serviceProvider.shutDown();
     }
 }

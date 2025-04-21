@@ -2,7 +2,6 @@ package client.serviceCenter.impl;
 
 import client.cache.ServiceCache;
 import client.serviceCenter.ServiceCenter;
-import client.serviceCenter.balance.HashRingManager;
 import client.serviceCenter.balance.impl.ConsistencyHashLoadBalance;
 import client.serviceCenter.watcher.WatchZK;
 import common.entity.Constants;
@@ -36,6 +35,25 @@ public class ZKServiceCenter implements ServiceCenter {
         watchZK.watchToUpdate(Constants.ROOT_PATH);
 
     }
+
+    @Override
+    public boolean checkRetry(String serviceName) {
+        boolean canRetry = false;
+        try {
+            List<String> serviceList = client.getChildren().forPath("/" + Constants.RETRY_PATH);
+            for (String service: serviceList) {
+                if (service.equals(serviceName)) {
+                    System.out.println("服务"+serviceName+"在白名单上，可进行重试");
+                    canRetry = true;
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return canRetry;
+    }
+
     @Override
     public InetSocketAddress serviceDiscovery(String serviceName) {
         try {

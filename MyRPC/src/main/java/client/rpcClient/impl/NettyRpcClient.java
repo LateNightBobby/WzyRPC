@@ -37,6 +37,10 @@ public class NettyRpcClient implements RpcClient {
         this.serviceCenter = new ZKServiceCenter();
     }
 
+    public NettyRpcClient(ServiceCenter serviceCenter) throws InterruptedException {
+        this.serviceCenter = serviceCenter;
+    }
+
     //netty客户端初始化
     static {
         eventLoopGroup = new NioEventLoopGroup();

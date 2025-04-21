@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import server.provider.ServiceProvider;
 import common.message.RpcRequest;
 import common.message.RpcResponse;
+import server.rateLimit.RateLimit;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -35,6 +36,11 @@ public class NettyRPCServerHandler extends SimpleChannelInboundHandler<RpcReques
     private RpcResponse getResponse(RpcRequest rpcRequest){
         //得到服务名
         String interfaceName=rpcRequest.getInterfaceName();
+        RateLimit rateLimit = serviceProvider.getRateLimitProvider().getRateLimit(interfaceName);
+        if (!rateLimit.getToken()) {
+            System.out.println("接口: " + interfaceName +"流量过大，稍后重试");
+            return RpcResponse.fail();
+        }
         //得到服务端相应服务实现类
         Object service = serviceProvider.getService(interfaceName);
         //反射调用方法

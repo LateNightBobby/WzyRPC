@@ -1,8 +1,11 @@
 package client.proxy;
 
+import client.retry.GuavaRetry;
 import client.rpcClient.RpcClient;
 import client.rpcClient.impl.NettyRpcClient;
 import client.rpcClient.impl.SocketRpcClient;
+import client.serviceCenter.ServiceCenter;
+import client.serviceCenter.impl.ZKServiceCenter;
 import common.message.RpcRequest;
 import common.message.RpcResponse;
 import lombok.AllArgsConstructor;
@@ -19,6 +22,7 @@ public class ClientProxy implements InvocationHandler {
 //    private int port;
 
     private RpcClient rpcClient;
+    private ServiceCenter serviceCenter;
 
 //    public ClientProxy(String host,int port,int choose){
 //        switch (choose){
@@ -30,7 +34,8 @@ public class ClientProxy implements InvocationHandler {
 //        }
 //    }
     public ClientProxy() throws InterruptedException {
-        rpcClient=new NettyRpcClient();
+        serviceCenter = new ZKServiceCenter();
+        rpcClient=new NettyRpcClient(serviceCenter);
     }
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -41,7 +46,12 @@ public class ClientProxy implements InvocationHandler {
                 .params(args)
                 .paramsType(method.getParameterTypes())
                 .build();
-        RpcResponse rpcResponse = rpcClient.sendRequest(rpcRequest);
+        RpcResponse rpcResponse;
+        if (serviceCenter.checkRetry(rpcRequest.getInterfaceName())) {
+            rpcResponse = new GuavaRetry().sendServiceWithRetry(rpcRequest, rpcClient);
+        } else {
+            rpcResponse = rpcClient.sendRequest(rpcRequest);
+        }
 //        System.out.println(rpcResponse);
         return rpcResponse.getData();
     }
