@@ -16,7 +16,6 @@ public class ServiceProvider {
 
     private String host;
     private int port;
-    private boolean canRetry;
 
     private List<String> serviceNames;
 
@@ -29,21 +28,11 @@ public class ServiceProvider {
         this.port = port;
         this.interfaceProvider = new HashMap<>();
         this.serviceRegister = new ZKServiceRegister();
-        this.canRetry = false;
-        this.serviceNames = new ArrayList<>();
-        this.rateLimitProvider = new RateLimitProvider();
-    }
-    public ServiceProvider (String host, int port, boolean canRetry) {
-        this.host = host;
-        this.port = port;
-        this.interfaceProvider = new HashMap<>();
-        this.serviceRegister = new ZKServiceRegister();
-        this.canRetry = canRetry;
         this.serviceNames = new ArrayList<>();
         this.rateLimitProvider = new RateLimitProvider();
     }
 
-    public void provideServiceInterface(Object service) {
+    public void provideServiceInterface(Object service, boolean canRetry) {
         String serviceName = service.getClass().getName();
         serviceNames.add(serviceName);
         // 所有实现的接口

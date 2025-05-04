@@ -13,6 +13,12 @@ import lombok.AllArgsConstructor;
 public class NettyRpcServer implements RpcServer {
 
     private ServiceProvider serviceProvider;
+
+    private ChannelFuture channelFuture;
+
+    public NettyRpcServer(ServiceProvider serviceProvider) {
+        this.serviceProvider = serviceProvider;
+    }
     @Override
     public void start(int port) {
         // netty 服务线程组boss负责建立连接， work负责具体的请求
@@ -27,7 +33,7 @@ public class NettyRpcServer implements RpcServer {
                     //NettyClientInitializer这里 配置netty对消息的处理机制
                     .childHandler(new NettyServerInitializer(serviceProvider));
             //同步堵塞
-            ChannelFuture channelFuture=serverBootstrap.bind(port).sync();
+            channelFuture = serverBootstrap.bind(port).sync();
             //死循环监听
             channelFuture.channel().closeFuture().sync();
         }catch (InterruptedException e){
@@ -40,6 +46,16 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public void stop() {
+        if (channelFuture != null) {
+            try {
+                channelFuture.channel().close().sync();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        } else {
+            System.out.println("通道未启动无法关闭");
+        }
         serviceProvider.shutDown();
     }
 }

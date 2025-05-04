@@ -3,15 +3,11 @@ package client.netty.nettyInitializer;
 
 import common.serializer.myEncoderDecoder.MyDecoder;
 import common.serializer.myEncoderDecoder.MyEncoder;
-import common.serializer.mySerializer.JsonSerializer;
+import common.serializer.mySerializer.KryoSerializer;
+import common.serializer.mySerializer.ObjectSerializer;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.serialization.ClassResolver;
-import io.netty.handler.codec.serialization.ObjectDecoder;
-import io.netty.handler.codec.serialization.ObjectEncoder;
 import client.netty.handler.NettyClientHandler;
 
 /**
@@ -41,7 +37,7 @@ public class NettyClientInitializer extends ChannelInitializer<SocketChannel> {
 //            }
 //        }));
         pipeline.addLast(new MyDecoder());
-        pipeline.addLast(new MyEncoder(new JsonSerializer()));
+        pipeline.addLast(new MyEncoder(new ObjectSerializer()));
         pipeline.addLast(new NettyClientHandler());
     }
 }

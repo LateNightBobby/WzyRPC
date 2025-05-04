@@ -2,6 +2,7 @@ package client.serviceCenter.impl;
 
 import client.cache.ServiceCache;
 import client.serviceCenter.ServiceCenter;
+import client.serviceCenter.balance.LoadBalance;
 import client.serviceCenter.balance.impl.ConsistencyHashLoadBalance;
 import client.serviceCenter.watcher.WatchZK;
 import common.entity.Constants;
@@ -12,12 +13,16 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class ZKServiceCenter implements ServiceCenter {
 
     private CuratorFramework client;
 
     private ServiceCache cache;
+
+    private LoadBalance loadBalance = new ConsistencyHashLoadBalance();
 
     public ZKServiceCenter() throws InterruptedException {
         RetryPolicy policy = new ExponentialBackoffRetry(1000, 3);
@@ -28,6 +33,7 @@ public class ZKServiceCenter implements ServiceCenter {
         this.client = CuratorFrameworkFactory.builder().connectString(Constants.ZK_ADDRESS)
                 .sessionTimeoutMs(40000).retryPolicy(policy).namespace(Constants.ROOT_PATH).build();
         this.client.start();
+        this.client.blockUntilConnected();
         System.out.println("zookeeper ServiceCenter 连接成功");
 
         cache = new ServiceCache();
@@ -36,6 +42,22 @@ public class ZKServiceCenter implements ServiceCenter {
 
     }
 
+    //保证线程安全使用CopyOnWriteArraySet
+//    private Set<String> retryServiceCache = new CopyOnWriteArraySet<>();
+    //写一个白名单缓存，优化性能
+//    @Override
+//    public boolean checkRetry(InetSocketAddress serviceAddress, String methodSignature) {
+//        if (retryServiceCache.isEmpty()) {
+//            try {
+//                CuratorFramework rootClient = client.usingNamespace(RETRY);
+//                List<String> retryableMethods = rootClient.getChildren().forPath("/" + getServiceAddress(serviceAddress));
+//                retryServiceCache.addAll(retryableMethods);
+//            } catch (Exception e) {
+//                log.error("检查重试失败，方法签名：{}", methodSignature, e);
+//            }
+//        }
+//        return retryServiceCache.contains(methodSignature);
+//    }
     @Override
     public boolean checkRetry(String serviceName) {
         boolean canRetry = false;
@@ -61,12 +83,13 @@ public class ZKServiceCenter implements ServiceCenter {
             List<String> serviceList = cache.getServiceFromCache(serviceName);
 
             if (serviceList == null) {
+                System.out.println("尝试访问路径: " + client.getNamespace() + "/" + serviceName);
                 serviceList = client.getChildren().forPath("/" + serviceName);
             }
 
 //            List<String> strings = client.getChildren().forPath("/" + serviceName);
 //            TODO 负载均衡 现默认使用第一个 hh
-            String address = new ConsistencyHashLoadBalance().balance(serviceList);
+            String address = loadBalance.balance(serviceList);
 //            String address = HashRingManager.getServer(serviceName);
             return parseAddress(address);
 //            return parseAddress(serviceList.get(0));

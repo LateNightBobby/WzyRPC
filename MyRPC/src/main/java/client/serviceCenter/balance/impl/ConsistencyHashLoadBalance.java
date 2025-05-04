@@ -3,18 +3,24 @@ package client.serviceCenter.balance.impl;
 import client.serviceCenter.balance.LoadBalance;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ConsistencyHashLoadBalance implements LoadBalance {
     //虚拟结点个数
     private static final int VIRTUAL_NUM = 5;
     //虚拟结点分配，hash值 - 虚拟节点服务器名称
-    private static SortedMap<Integer, String> shards = new TreeMap<>();
+    private SortedMap<Integer, String> shards = new TreeMap<>();
     //真实结点列表
     private static List<String> realNodes = new LinkedList<>();
+
+//    private final Map<String, SortedMap<Integer, String>> serviceShards = new ConcurrentHashMap<>();
+//    private final Map<String, List<String>> serviceRealNodes = new ConcurrentHashMap<>();
     //模拟初始服务器
     private String[] servers = null;
 
-    private static void init(List<String> serverList) {
+    private void init(List<String> serverList) {
+//        SortedMap<Integer, String> shards = new TreeMap<>();
+//        List<String> realNodes = new ArrayList<>();
         for (String server: serverList) {
             realNodes.add(server);
             System.out.println("真实节点[" + server + "] 被添加");
@@ -26,11 +32,13 @@ public class ConsistencyHashLoadBalance implements LoadBalance {
                 System.out.println("虚拟节点[" + virtualNode + "] hash:" + hash + "，被添加");
             }
         }
+//        serviceShards.put(serviceName, shards);
+//        serviceRealNodes.put(serviceName, realNodes);
     }
 
     @Override
     public String balance(List<String> addressList) {
-        String random= UUID.randomUUID().toString();
+        String random = UUID.randomUUID().toString();
         return getServer(random, addressList);
     }
 
@@ -62,10 +70,15 @@ public class ConsistencyHashLoadBalance implements LoadBalance {
         }
     }
 
-    public static String getServer(String node, List<String> serviceList) {
-        init(serviceList);
+    public String getServer(String node, List<String> serviceList) {
+        if (shards.isEmpty()) {
+            init(serviceList);
+        }
         int hash = getHash(node);
         Integer key = null;
+        for (Integer k: shards.keySet()) {
+            System.out.println(shards.get(k));
+        }
         SortedMap<Integer, String> subMap = shards.tailMap(hash);
         if (subMap.isEmpty()) {
             key = shards.lastKey();

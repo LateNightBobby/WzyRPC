@@ -16,6 +16,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.*;
 
 public class NettyRpcClient implements RpcClient {
 
@@ -29,7 +30,14 @@ public class NettyRpcClient implements RpcClient {
 
     private ServiceCenter serviceCenter;
 
-//    public NettyRpcClient(String host, int port) {
+    ExecutorService executorService = new ThreadPoolExecutor(4, 4, 1000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(10));
+    Future<Integer> res = executorService.submit(() -> {
+        return 1;
+    });
+
+
+
+    //    public NettyRpcClient(String host, int port) {
 //        this.host = host;
 //        this.port = port;
 //    }

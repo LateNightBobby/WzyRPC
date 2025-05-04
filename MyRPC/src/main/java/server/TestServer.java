@@ -1,6 +1,8 @@
 package server;
 
 
+import common.service.OrderService;
+import common.service.impl.OrderServiceImpl;
 import common.service.impl.UserServiceImpl;
 import server.provider.ServiceProvider;
 import server.serverInstance.RpcServer;
@@ -15,9 +17,11 @@ import common.service.UserService;
 public class TestServer {
     public static void main(String[] args) {
         UserService userService=new UserServiceImpl();
+        OrderService orderService = new OrderServiceImpl();
 
-        ServiceProvider serviceProvider=new ServiceProvider("127.0.0.1", 9999, false);
-        serviceProvider.provideServiceInterface(userService);
+        ServiceProvider serviceProvider=new ServiceProvider("127.0.0.1", 9999);
+        serviceProvider.provideServiceInterface(userService, false);
+        serviceProvider.provideServiceInterface(orderService, true);
 
         RpcServer rpcServer=new NettyRpcServer(serviceProvider);
         rpcServer.start(9999);
